@@ -1120,9 +1120,11 @@ public:
 			vertex.vs_input.attrib_float.clear();
 			vertex.vs_input.attrib_vec4f.clear();
 			vertex.vs_input.attrib_vec3f.clear();
+			vertex.vs_input.attrib_vec2f.clear();
 			vertex.ps_input.varying_float.clear();
 			vertex.ps_input.varying_vec4f.clear();
 			vertex.ps_input.varying_vec3f.clear();
+			vertex.ps_input.varying_vec2f.clear();
 		}
 	}
 
