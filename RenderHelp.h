@@ -95,7 +95,7 @@ template <typename T> struct Vector<3, T> {
 };
 
 
-// 特化思维矢量
+// 特化四维矢量
 template <typename T> struct Vector<4, T> {
 	union {
 		struct { T x, y, z, w; };    // 元素别名
