@@ -117,7 +117,7 @@ int main(void)
 
 	// 用画板显示图片
 #if defined(_WIN32) || defined(WIN32)
-	system("acdsee.exe output.bmp");
+	system("mspaint.exe output.bmp");
 #endif
 
 	return 0;
