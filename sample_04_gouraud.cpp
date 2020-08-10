@@ -87,7 +87,7 @@ int main(void)
 			// 而 model 矩阵就是模型坐标系到世界坐标系的唯一变换，所以要参与一下
 			normal = (normal.xyz1() * mat_model).xyz();		
 			float intense = vector_dot(normal, vector_normalize(light_dir));
-			intense = Max(0.0f, intense) + 0.1;
+			intense = Max(0.0f, intense) + 0.1;		// 避免越界同时加入一个常量环境光
 			output.varying_float[VARYING_LIGHT] = Min(1.0f, intense);
 			// std::cout << "color: " << input.attrib_vec4f[ATTR_COLOR] << "\n";
 		});
