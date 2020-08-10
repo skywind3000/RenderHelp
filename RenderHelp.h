@@ -301,13 +301,13 @@ inline T vector_cross(const Vector<2, T>& a, const Vector<2, T>& b) {
 	return a.x * b.y - a.y * b.x;
 }
 
-// 三位矢量叉乘，得到新矢量
+// 三维矢量叉乘，得到新矢量
 template<typename T>
 inline Vector<3, T> vector_cross(const Vector<3, T>& a, const Vector<3, T>& b) {
 	return Vector<3, T>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
-// 思维矢量叉乘：前三维叉乘，后一位保留
+// 四维矢量叉乘：前三维叉乘，后一位保留
 template<typename T>
 inline Vector<4, T> vector_cross(const Vector<4, T>& a, const Vector<4, T>& b) {
 	return Vector<4, T>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x, a.w);
