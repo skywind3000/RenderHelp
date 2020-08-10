@@ -359,7 +359,7 @@ inline bool vector_near_equal(const Vector<N, double>& a, const Vector<N, double
 	return vector_near(a, b, e);
 }
 
-// 矢量值归范围裁剪
+// 矢量值元素范围裁剪
 template<size_t N, typename T>
 inline Vector<N, T> vector_clamp(const Vector<N, T>& a, T minx = 0, T maxx = 1) {
 	Vector<N, T> b;
