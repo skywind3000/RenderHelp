@@ -343,8 +343,8 @@ inline Vector<N, T> vector_between(const Vector<N, T>& minx, const Vector<N, T>&
 
 // 判断矢量是否接近
 template<size_t N, typename T>
-inline bool vector_near(const Vector<N, T>& a, const Vector<N, T>& b, T error) {
-	return (vector_length_square(a - b) < error);
+inline bool vector_near(const Vector<N, T>& a, const Vector<N, T>& b, T dist) {
+	return (vector_length_square(a - b) <= dist);
 }
 
 // 判断两个单精度矢量是否近似
@@ -357,6 +357,17 @@ inline bool vector_near_equal(const Vector<N, float>& a, const Vector<N, float>&
 template<size_t N>
 inline bool vector_near_equal(const Vector<N, double>& a, const Vector<N, double>& b, double e = 0.0000001) {
 	return vector_near(a, b, e);
+}
+
+// 矢量值归范围裁剪
+template<size_t N, typename T>
+inline Vector<N, T> vector_clamp(const Vector<N, T>& a, T minx = 0, T maxx = 1) {
+	Vector<N, T> b;
+	for (size_t i = 0; i < N; i++) {
+		T x = (a[i] < minx)? minx : a[i];
+		b[i] = (x > maxx)? maxx : x;	
+	}
+	return b;
 }
 
 // 输出到文本流
@@ -473,6 +484,21 @@ template<size_t ROW, size_t COL, typename T> struct Matrix {
 //---------------------------------------------------------------------
 // 数学库：矩阵运算
 //---------------------------------------------------------------------
+template<size_t ROW, size_t COL, typename T>
+inline bool operator == (const Matrix<ROW, COL, T>& a, const Matrix<ROW, COL, T>& b) {
+	for (size_t r = 0; r < ROW; r++) {
+		for (size_t c = 0; c < COL; c++) {
+			if (a.m[r][c] != b.m[r][c]) return false;
+		}
+	}
+	return true;
+}
+
+template<size_t ROW, size_t COL, typename T>
+inline bool operator != (const Matrix<ROW, COL, T>& a, const Matrix<ROW, COL, T>& b) {
+	return !(a == b);
+}
+
 template<size_t ROW, size_t COL, typename T>
 inline Matrix<ROW, COL, T> operator + (const Matrix<ROW, COL, T>& src) {
 	return src;
