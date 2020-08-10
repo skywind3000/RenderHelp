@@ -78,12 +78,7 @@ int main(void)
 	rh.SetPixelShader([&] (PS_Input& input) -> Vec4f {
 			Vec2f coord = input.varying_vec2f[VARYING_TEXUV];	// 取得纹理坐标
 			Vec4f tc = texture.Sample2D(coord);		// 纹理采样并返回像素颜色
-		#if 1
 			return tc;		// 返回纹理
-		#else
-			Vec4f cc = input.varying_vec4f[VARYING_COLOR];
-			return tc * cc;	// 纹理混合颜色
-		#endif
 		});
 
 	// 绘制盒子
