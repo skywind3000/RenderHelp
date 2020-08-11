@@ -994,8 +994,31 @@ public:
 	}
 
 	// 按照 Vec4f 画点
-	void SetPixel(int x, int y, const Vec4f& color) {
+	inline void SetPixel(int x, int y, const Vec4f& color) {
 		SetPixel(x, y, vector_to_color(color));
+	}
+
+	// 上下反转
+	inline void FlipVertical() {
+		uint8_t *buffer = new uint8_t[_pitch];
+		for (int i = 0, j = _h - 1; i < j; i++, j--) {
+			memcpy(buffer, GetLine(i), _pitch);
+			memcpy(GetLine(i), GetLine(j), _pitch);
+			memcpy(GetLine(j), buffer, _pitch);
+		}
+		delete []buffer;
+	}
+
+	// 水平反转
+	inline void FlipHorizontal() {
+		for (int y = 0; y < _h; y++) {
+			for (int i = 0, j = _w - 1; i < j; i++, j--) {
+				uint32_t c1 = GetPixel(i, y);
+				uint32_t c2 = GetPixel(j, y);
+				SetPixel(i, y, c2);
+				SetPixel(j, y, c1);
+			}
+		}
 	}
 
 protected:
