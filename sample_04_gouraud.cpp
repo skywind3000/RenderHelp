@@ -2,8 +2,14 @@
 
 #include "RenderHelp.h"
 
+// 定义顶点结构
+struct VertexAttrib { Vec3f pos; Vec2f uv; Vec3f color; Vec3f normal; };
 
-struct { Vec3f pos; Vec2f uv; Vec3f color; } mesh[] = {
+// 顶点着色器输入
+VertexAttrib vs_input[3];
+
+// 模型
+VertexAttrib mesh[] = {
 	{ {  1, -1,  1, }, { 0, 0 }, { 1.0f, 0.2f, 0.2f }, },
 	{ { -1, -1,  1, }, { 0, 1 }, { 0.2f, 1.0f, 0.2f }, },
 	{ { -1,  1,  1, }, { 1, 1 }, { 0.2f, 0.2f, 1.0f }, },
@@ -15,43 +21,33 @@ struct { Vec3f pos; Vec2f uv; Vec3f color; } mesh[] = {
 };
 
 // 定义属性和 varying 中的纹理坐标 key
-const int ATTR_TEXUV = 0;
-const int ATTR_COLOR = 1;
-const int ATTR_NORMAL = 2;
 const int VARYING_TEXUV = 0;
 const int VARYING_COLOR = 1;
 const int VARYING_LIGHT = 2;
-
-void draw_triangle(RenderHelp& rh, int a, int b, int c) 
-{
-	rh.SetVertex(0, mesh[a].pos);
-	rh.SetVertex(1, mesh[b].pos);
-	rh.SetVertex(2, mesh[c].pos);
-	rh.SetAttrib(0, ATTR_TEXUV, mesh[a].uv);
-	rh.SetAttrib(1, ATTR_TEXUV, mesh[b].uv);
-	rh.SetAttrib(2, ATTR_TEXUV, mesh[c].uv);
-	rh.SetAttrib(0, ATTR_COLOR, mesh[a].color);
-	rh.SetAttrib(1, ATTR_COLOR, mesh[b].color);
-	rh.SetAttrib(2, ATTR_COLOR, mesh[c].color);
-	Vec3f ab = mesh[b].pos - mesh[a].pos;
-	Vec3f ac = mesh[c].pos - mesh[a].pos;
-	Vec3f normal = vector_normalize(vector_cross(ac, ab));
-	rh.SetAttrib(0, ATTR_NORMAL, normal);
-	rh.SetAttrib(1, ATTR_NORMAL, normal);
-	rh.SetAttrib(2, ATTR_NORMAL, normal);
-	rh.DrawPrimitive();
-}
 
 void draw_plane(RenderHelp& rh, int a, int b, int c, int d) 
 {
 	mesh[a].uv.x = 0, mesh[a].uv.y = 0, mesh[b].uv.x = 0, mesh[b].uv.y = 1;
 	mesh[c].uv.x = 1, mesh[c].uv.y = 1, mesh[d].uv.x = 1, mesh[d].uv.y = 0;
-	draw_triangle(rh, a, b, c);
-	draw_triangle(rh, c, d, a);
-}
 
-void draw_box(RenderHelp& rh) 
-{
+	Vec3f ab = mesh[b].pos - mesh[a].pos;
+	Vec3f ac = mesh[c].pos - mesh[a].pos;
+	Vec3f normal = vector_normalize(vector_cross(ac, ab));
+
+	mesh[a].normal = normal;
+	mesh[b].normal = normal;
+	mesh[c].normal = normal;
+	mesh[d].normal = normal;
+
+	vs_input[0] = mesh[a];
+	vs_input[1] = mesh[b];
+	vs_input[2] = mesh[c];
+	rh.DrawPrimitive();
+
+	vs_input[0] = mesh[c];
+	vs_input[1] = mesh[d];
+	vs_input[2] = mesh[a];
+	rh.DrawPrimitive();
 }
 
 int main(void)
@@ -77,23 +73,26 @@ int main(void)
 	Vec3f light_dir = {1, 0, 2};
 
 	// 顶点着色器
-	rh.SetVertexShader([&] (VS_Input& input, PS_Input& output) {
-			output.pos = input.pos * mat_mvp;	// 输出变换后的坐标
-			output.varying_vec2f[VARYING_TEXUV] = input.attrib_vec2f[ATTR_TEXUV];
-			output.varying_vec4f[VARYING_COLOR] = input.attrib_vec3f[ATTR_COLOR].xyz1();
-			Vec3f normal = input.attrib_vec3f[ATTR_NORMAL];
+	rh.SetVertexShader([&] (int index, ShaderContext& output) -> Vec4f {
+			// 扩充成四维矢量并变换
+			Vec4f pos = vs_input[index].pos.xyz1() * mat_mvp;  
+			output.varying_vec2f[VARYING_TEXUV] = vs_input[index].uv;
+			output.varying_vec4f[VARYING_COLOR] = vs_input[index].color.xyz1();
 			// 法向需要经过 model 矩阵变换，但是不参与 view/projection 矩阵变换
 			// 相当于说，法向要在世界坐标系运算，而不是投影坐标系，或者摄像机坐标系
 			// 而 model 矩阵就是模型坐标系到世界坐标系的唯一变换，所以要参与一下
-			normal = (normal.xyz1() * mat_model).xyz();		
+			Vec3f normal = vs_input[index].normal;
+			normal = (normal.xyz1() * mat_model).xyz();
+			// 计算光照强度
 			float intense = vector_dot(normal, vector_normalize(light_dir));
-			intense = Max(0.0f, intense) + 0.1;		// 避免越界同时加入一个常量环境光
+			// 避免越界同时加入一个常量环境光 0.1
+			intense = Max(0.0f, intense) + 0.1;  
 			output.varying_float[VARYING_LIGHT] = Min(1.0f, intense);
-			// std::cout << "color: " << input.attrib_vec4f[ATTR_COLOR] << "\n";
+			return pos;
 		});
 
 	// 像素着色器
-	rh.SetPixelShader([&] (PS_Input& input) -> Vec4f {
+	rh.SetPixelShader([&] (ShaderContext& input) -> Vec4f {
 			Vec2f coord = input.varying_vec2f[VARYING_TEXUV];	// 取得纹理坐标
 			Vec4f tc = texture.Sample2D(coord);		// 纹理采样并返回像素颜色
 			float light = input.varying_float[VARYING_LIGHT];

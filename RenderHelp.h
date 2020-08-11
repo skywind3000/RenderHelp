@@ -1036,21 +1036,8 @@ protected:
 // 着色器定义
 //---------------------------------------------------------------------
 
-// VertexShader 输入
-// 不同属性使用整数 key 进行访问
-struct VS_Input {
-	Vec4f pos;                            // 顶点坐标
-	std::map<int, float> attrib_float;    // 浮点数属性列表
-	std::map<int, Vec2f> attrib_vec2f;    // 二维矢量属性列表
-	std::map<int, Vec3f> attrib_vec3f;    // 三维矢量属性列表
-	std::map<int, Vec4f> attrib_vec4f;    // 四维矢量属性列表
-};
-
-
-// PixelShader 输入，同时也是 VertexShader 的输出
-// 前面 VS 设置好 pos 和 varying 后，每次调用 PS 前会根据像素坐标进行插值
-struct PS_Input {
-	Vec4f pos;                             // VS 输出的新坐标
+// 着色器上下文，由 VS 设置，再由渲染器按像素逐点插值后，供 PS 读取
+struct ShaderContext {
 	std::map<int, float> varying_float;    // 浮点数 varying 列表
 	std::map<int, Vec2f> varying_vec2f;    // 二维矢量 varying 列表
 	std::map<int, Vec3f> varying_vec3f;    // 三维矢量 varying 列表
@@ -1058,14 +1045,15 @@ struct PS_Input {
 };
 
 
-// 顶点着色器：输入 VS_Input，需要填充 PS_Input
-// 顶点着色器需要根据 VS_Input 的内容，设置好 PS_Input 的 pos
-typedef std::function<void(VS_Input &, PS_Input &)> VertexShader;
+// 顶点着色器：因为是 C++ 编写，无需传递 attribute，传个 0-2 的顶点序号
+// 着色器函数直接在外层根据序号读取响应数据即可，最后需要返回一个坐标 pos
+// 各项 varying 设置到 output 里，由渲染器插值后传递给 PS 
+typedef std::function<Vec4f(int index, ShaderContext &output)> VertexShader;
 
 
-// 像素着色器：输入 PS_Input，需要返回 Vec4f 类型的颜色
-// 三角形内每个点的 PS_Input 具体值会根据前面三个顶点的 PS_Input 插值得到
-typedef std::function<Vec4f(PS_Input &)> PixelShader;
+// 像素着色器：输入 ShaderContext，需要返回 Vec4f 类型的颜色
+// 三角形内每个点的 input 具体值会根据前面三个顶点的 output 插值得到
+typedef std::function<Vec4f(ShaderContext &input)> PixelShader;
 
 
 //---------------------------------------------------------------------
@@ -1108,7 +1096,6 @@ public:
 			delete []_depth_buffer;
 			_depth_buffer= NULL;
 		}
-		ClearVertex();
 		_color_fg = 0xffffffff;
 		_color_bg = 0xff191970;
 	}
@@ -1139,34 +1126,9 @@ public:
 		}
 	}
 
-	// 清空顶点的 attrib/varying
-	inline void ClearVertex() {
-		for (int i = 0; i < 3; i++) {
-			Vertex &vertex = _vertex[i];
-			vertex.vs_input.attrib_float.clear();
-			vertex.vs_input.attrib_vec4f.clear();
-			vertex.vs_input.attrib_vec3f.clear();
-			vertex.vs_input.attrib_vec2f.clear();
-			vertex.ps_input.varying_float.clear();
-			vertex.ps_input.varying_vec4f.clear();
-			vertex.ps_input.varying_vec3f.clear();
-			vertex.ps_input.varying_vec2f.clear();
-		}
-	}
-
 	// 设置 VS/PS 着色器函数
 	inline void SetVertexShader(VertexShader vs) { _vertex_shader = vs; }
 	inline void SetPixelShader(PixelShader ps) { _pixel_shader = ps; }
-
-	// 设置顶点坐标，id 是顶点下标，范围是 [0, 2]
-	inline void SetVertex(int id, const Vec4f& pos) { _vertex[id].vs_input.pos = pos; }
-	inline void SetVertex(int id, const Vec3f& pos) { SetVertex(id, pos.xyz1()); }
-
-	// 设置顶点属性，id 是顶点下表，name 为属性列表的 key
-	inline void SetAttrib(int id, int name, float x) { _vertex[id].vs_input.attrib_float[name] = x; }
-	inline void SetAttrib(int id, int name, const Vec2f& v) { _vertex[id].vs_input.attrib_vec2f[name] = v; }
-	inline void SetAttrib(int id, int name, const Vec3f& v) { _vertex[id].vs_input.attrib_vec3f[name] = v; }
-	inline void SetAttrib(int id, int name, const Vec4f& v) { _vertex[id].vs_input.attrib_vec4f[name] = v; }
 
 	// 保存 FrameBuffer 到 BMP 文件
 	inline void SaveFile(const char *filename) { if (_frame_buffer) _frame_buffer->SaveFile(filename); }
@@ -1200,48 +1162,45 @@ public:
 
 	// 绘制一个三角形，必须先 SetVertex/SetAttrib 设定好三个点坐标和属性
 	inline bool DrawPrimitive() {
-		if (_frame_buffer == NULL) 
+		if (_frame_buffer == NULL || _vertex_shader == NULL) 
 			return false;
 
 		// 顶点初始化
 		for (int k = 0; k < 3; k++) {
 			Vertex& vertex = _vertex[k];
 
-			// 先复制一遍坐标，vertex shader 不设置的话，就用这个默认值
-			vertex.ps_input.pos = vertex.vs_input.pos;
+			// 清空上下文 varying 列表
+			vertex.context.varying_float.clear();
+			vertex.context.varying_vec2f.clear();
+			vertex.context.varying_vec3f.clear();
+			vertex.context.varying_vec4f.clear();
 
-			// 运行顶点着色程序
-			if (_vertex_shader) {
-				_vertex_shader(vertex.vs_input, vertex.ps_input);
-			}
+			// 运行顶点着色程序，返回顶点坐标
+			vertex.pos = _vertex_shader(k, vertex.context);
 
 			// 简单裁剪，任何一个顶点超过 CVV 就剔除
-			Vec4f& pos = vertex.ps_input.pos;
-			float w = pos.w;
+			float w = vertex.pos.w;
 			
 			// 这里图简单，当一个点越界，立马放弃整个三角形，更精细的做法是
 			// 如果越界了就在齐次空间内进行裁剪，拆分为 0-2 个三角形然后继续
 			if (w == 0.0f) return false;
-			if (pos.z < 0.0f || pos.z > w) return false;
-			if (pos.x < -w || pos.x > w) return false;
-			if (pos.y < -w || pos.y > w) return false;
+			if (vertex.pos.z < 0.0f || vertex.pos.z > w) return false;
+			if (vertex.pos.x < -w || vertex.pos.x > w) return false;
+			if (vertex.pos.y < -w || vertex.pos.y > w) return false;
 
-			// 顶点所坐标除以 w
-			float reciprocal_w = 1.0f / w;
-			pos.w = reciprocal_w;		// pos.w 保存 w 的倒数
-			pos.x *= reciprocal_w;
-			pos.y *= reciprocal_w;
-			pos.z *= reciprocal_w;
+			// 计算 w 的倒数：Reciprocal of the Homogeneous W 
+			vertex.rhw = 1.0f / w;
+
+			// 齐次坐标空间 /w 归一化到单位体积 cvv
+			vertex.pos *= vertex.rhw;
 
 			// 计算屏幕坐标
-			vertex.spf.x = (pos.x + 1.0f) * _fb_width * 0.5f;
-			vertex.spf.y = (1.0f - pos.y) * _fb_height * 0.5f;
+			vertex.spf.x = (vertex.pos.x + 1.0f) * _fb_width * 0.5f;
+			vertex.spf.y = (1.0f - vertex.pos.y) * _fb_height * 0.5f;
 
 			// 整数屏幕坐标：加 0.5 的偏移取屏幕像素方格中心对齐
 			vertex.spi.x = (int)(vertex.spf.x + 0.5f);
 			vertex.spi.y = (int)(vertex.spf.y + 0.5f);
-
-			// printf("%d: (%d, %d)\n", k, vertex.spi.x, vertex.spi.y);
 
 			// 更新外接矩形范围
 			if (k == 0) {
@@ -1254,16 +1213,6 @@ public:
 				_min_y = Between(0, _fb_height - 1, Min(_min_y, vertex.spi.y));
 				_max_y = Between(0, _fb_height - 1, Max(_max_y, vertex.spi.y));
 			}
-
-			// 所有 varying 提前除以 w，为线性插值做准备
-			for (auto &it: vertex.ps_input.varying_float) 
-				it.second = it.second * reciprocal_w;
-			for (auto &it: vertex.ps_input.varying_vec2f)
-				it.second = it.second * reciprocal_w;
-			for (auto &it: vertex.ps_input.varying_vec3f)
-				it.second = it.second * reciprocal_w;
-			for (auto &it: vertex.ps_input.varying_vec4f)
-				it.second = it.second * reciprocal_w;
 		}
 
 		// 绘制线框
@@ -1277,8 +1226,8 @@ public:
 		if (_render_pixel == false) return false;
 
 		// 判断三角形朝向
-		Vec4f v01 = _vertex[1].ps_input.pos - _vertex[0].ps_input.pos;
-		Vec4f v02 = _vertex[2].ps_input.pos - _vertex[0].ps_input.pos;
+		Vec4f v01 = _vertex[1].pos - _vertex[0].pos;
+		Vec4f v02 = _vertex[2].pos - _vertex[0].pos;
 		Vec4f normal = vector_cross(v01, v02);
 
 		// 使用 vtx 访问三个顶点，而不直接用 _vertex 访问，因为可能会调整顺序
@@ -1342,26 +1291,28 @@ public:
 				b = b * (1.0f / s);
 				c = c * (1.0f / s);
 
-				PS_Input& i0 = vtx[0]->ps_input;
-				PS_Input& i1 = vtx[1]->ps_input;
-				PS_Input& i2 = vtx[2]->ps_input;
-
-				// 插值得到当前点的 1/w，先前保存的 pos.w 已经是 w 的倒数了
-				float rw = a * i0.pos.w + b * i1.pos.w + c * i2.pos.w;
+				// 计算当前点的 1/w，因 1/w 和屏幕空间呈线性关系，故直接重心插值
+				float rhw = vtx[0]->rhw * a + vtx[1]->rhw * b + vtx[2]->rhw * c;
 
 				// 进行深度测试
-				if (rw < _depth_buffer[cy][cx]) continue;
-				_depth_buffer[cy][cx] = rw;
+				if (rhw < _depth_buffer[cy][cx]) continue;
+				_depth_buffer[cy][cx] = rhw;
 
-				// 更新 w
-				float w = 1.0f / rw;
+				// 还原当前像素的 w
+				float w = 1.0f / ((rhw != 0.0f)? rhw : 1.0f);
 
-				// 初始化像素着色器输入
-				PS_Input input;
-				input.pos.w = w;
-				input.pos.x = (a * i0.pos.x + b * i1.pos.x + c * i2.pos.x) * w;
-				input.pos.y = (a * i0.pos.y + b * i1.pos.y + c * i2.pos.y) * w;
-				input.pos.z = (a * i0.pos.z + b * i1.pos.z + c * i2.pos.z) * w;
+				// 计算三个顶点插值 varying 的系数
+				// 先除以各自顶点的 w 然后进行屏幕空间插值然后再乘以当前 w
+				float k0 = vtx[0]->rhw * a * w;
+				float k1 = vtx[1]->rhw * b * w;
+				float k2 = vtx[2]->rhw * c * w;
+
+				// 准备为当前像素的各项 varying 进行插值
+				ShaderContext input;
+
+				ShaderContext& i0 = vtx[0]->context;
+				ShaderContext& i1 = vtx[1]->context;
+				ShaderContext& i2 = vtx[2]->context;
 
 				// 插值各项 varying
 				for (auto const &it: i0.varying_float) {
@@ -1369,7 +1320,7 @@ public:
 					float f0 = i0.varying_float[key];
 					float f1 = i1.varying_float[key];
 					float f2 = i2.varying_float[key];
-					input.varying_float[key] = (a * f0 + b * f1 + c * f2) * w;
+					input.varying_float[key] = k0 * f0 + k1 * f1 + k2 * f2;
 				}
 
 				for (auto const &it: i0.varying_vec2f) {
@@ -1377,7 +1328,7 @@ public:
 					const Vec2f& f0 = i0.varying_vec2f[key];
 					const Vec2f& f1 = i1.varying_vec2f[key];
 					const Vec2f& f2 = i2.varying_vec2f[key];
-					input.varying_vec2f[key] = (a * f0 + b * f1 + c * f2) * w;
+					input.varying_vec2f[key] = k0 * f0 + k1 * f1 + k2 * f2;
 				}
 
 				for (auto const &it: i0.varying_vec3f) {
@@ -1385,7 +1336,7 @@ public:
 					const Vec3f& f0 = i0.varying_vec3f[key];
 					const Vec3f& f1 = i1.varying_vec3f[key];
 					const Vec3f& f2 = i2.varying_vec3f[key];
-					input.varying_vec3f[key] = (a * f0 + b * f1 + c * f2) * w;
+					input.varying_vec3f[key] = k0 * f0 + k1 * f1 + k2 * f2;
 				}
 
 				for (auto const &it: i0.varying_vec4f) {
@@ -1393,7 +1344,7 @@ public:
 					const Vec4f& f0 = i0.varying_vec4f[key];
 					const Vec4f& f1 = i1.varying_vec4f[key];
 					const Vec4f& f2 = i2.varying_vec4f[key];
-					input.varying_vec4f[key] = (a * f0 + b * f1 + c * f2) * w;
+					input.varying_vec4f[key] = k0 * f0 + k1 * f1 + k2 * f2;
 				}
 
 				// 执行像素着色器
@@ -1422,10 +1373,11 @@ protected:
 
 	// 顶点结构体
 	struct Vertex {
-		VS_Input vs_input;    // VS 输入
-		PS_Input ps_input;    // PS 输入，同时也是 VS 输出
-		Vec2f spf;            // 浮点数屏幕坐标
-		Vec2i spi;            // 整数屏幕坐标
+		ShaderContext context;    // 上下文
+		float rhw;                // w 的倒数
+		Vec4f pos;                // 坐标
+		Vec2f spf;                // 浮点数屏幕坐标
+		Vec2i spi;                // 整数屏幕坐标
 	};
 
 protected:
