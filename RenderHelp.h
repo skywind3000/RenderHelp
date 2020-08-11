@@ -449,7 +449,7 @@ template<size_t ROW, size_t COL, typename T> struct Matrix {
 	}
 
 	// 矩阵旋转
-	inline Matrix<COL, ROW, T> GetRotate() const {
+	inline Matrix<COL, ROW, T> GetTranspose() const {
 		Matrix<COL, ROW, T> ret;
 		for (size_t r = 0; r < ROW; r++) {
 			for (size_t c = 0; c < COL; c++)
