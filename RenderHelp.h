@@ -12,7 +12,7 @@
 // - 包含一套位图 Bitmap 库，方便画点/画线，加载纹理，保存渲染结果
 // - 支持二次线性插值纹理采样器
 // - 支持深度缓存
-// - 支持多种数据类型的 attrib/varying
+// - 支持多种数据类型的 varying
 // - 支持顶点着色器 (Vertex Shader) 和像素着色器 (Pixel Shader)
 // - 支持加载 24 位和 32 位的 bmp 图片纹理
 //
@@ -1303,9 +1303,9 @@ public:
 
 				// 计算三个顶点插值 varying 的系数
 				// 先除以各自顶点的 w 然后进行屏幕空间插值然后再乘以当前 w
-				float k0 = vtx[0]->rhw * a * w;
-				float k1 = vtx[1]->rhw * b * w;
-				float k2 = vtx[2]->rhw * c * w;
+				float c0 = vtx[0]->rhw * a * w;
+				float c1 = vtx[1]->rhw * b * w;
+				float c2 = vtx[2]->rhw * c * w;
 
 				// 准备为当前像素的各项 varying 进行插值
 				ShaderContext input;
@@ -1320,7 +1320,7 @@ public:
 					float f0 = i0.varying_float[key];
 					float f1 = i1.varying_float[key];
 					float f2 = i2.varying_float[key];
-					input.varying_float[key] = k0 * f0 + k1 * f1 + k2 * f2;
+					input.varying_float[key] = c0 * f0 + c1 * f1 + c2 * f2;
 				}
 
 				for (auto const &it: i0.varying_vec2f) {
@@ -1328,7 +1328,7 @@ public:
 					const Vec2f& f0 = i0.varying_vec2f[key];
 					const Vec2f& f1 = i1.varying_vec2f[key];
 					const Vec2f& f2 = i2.varying_vec2f[key];
-					input.varying_vec2f[key] = k0 * f0 + k1 * f1 + k2 * f2;
+					input.varying_vec2f[key] = c0 * f0 + c1 * f1 + c2 * f2;
 				}
 
 				for (auto const &it: i0.varying_vec3f) {
@@ -1336,7 +1336,7 @@ public:
 					const Vec3f& f0 = i0.varying_vec3f[key];
 					const Vec3f& f1 = i1.varying_vec3f[key];
 					const Vec3f& f2 = i2.varying_vec3f[key];
-					input.varying_vec3f[key] = k0 * f0 + k1 * f1 + k2 * f2;
+					input.varying_vec3f[key] = c0 * f0 + c1 * f1 + c2 * f2;
 				}
 
 				for (auto const &it: i0.varying_vec4f) {
@@ -1344,7 +1344,7 @@ public:
 					const Vec4f& f0 = i0.varying_vec4f[key];
 					const Vec4f& f1 = i1.varying_vec4f[key];
 					const Vec4f& f2 = i2.varying_vec4f[key];
-					input.varying_vec4f[key] = k0 * f0 + k1 * f1 + k2 * f2;
+					input.varying_vec4f[key] = c0 * f0 + c1 * f1 + c2 * f2;
 				}
 
 				// 执行像素着色器
