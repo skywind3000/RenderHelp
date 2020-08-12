@@ -34,6 +34,8 @@ gcc -O2 sample_07_specular.cpp -o sample_07_specular -lstdc++
 
 ![](https://raw.githubusercontent.com/skywind3000/images/master/p/renderhelp/model_4.jpg)
 
+本项目的模型使用的是 [tinyrender](https://github.com/ssloy/tinyrenderer) 里面的开源模型。
+
 ## 编程接口
 
 ### 着色器变量
@@ -131,4 +133,40 @@ int main(void)
 运行结果：
 
 ![](https://raw.githubusercontent.com/skywind3000/images/master/p/renderhelp/sample_1.jpg)
+
+## 文件列表
+
+| 文件名 | 说明 |
+|-|-|
+| [RenderHelp.h](RenderHelp.h) | 渲染器的实现文件，使用时 include 它就够了 |
+| [Model.h](Model.h) | 加载模型 |
+| [sample_01_triangle.cpp](sample_01_triangle.cpp) | 绘制三角形的例子 |
+| [sample_02_texture.cpp](sample_02_texture.cpp) | 如何使用纹理，如何设置摄像机矩阵等 |
+| [sample_03_box.cpp](sample_03_box.cpp) | 如何绘制一个盒子 |
+| [sample_04_gouraud.cpp](sample_04_gouraud.cpp) | 对盒子进行简单高洛德着色 |
+| [sample_05_model.cpp](sample_05_model.cpp) | 如何加载和绘制模型 |
+| [sample_06_normal.cpp](sample_06_normal.cpp) | 使用法向贴图增强模型细节 |
+| [sample_07_specular.cpp](sample_07_specular.cpp) | 绘制高光 |
+
+## 项目对比
+
+十多年前我写了个软渲染器教程 [mini3d](https://github.com/skywind3000/mini3d)，比较清晰的说明了软件渲染器的核心原理，这是标准软渲染器的实现方法，叫做 Edge Walking。
+
+而本项目的实现方式是仿照 GPU 的 Edge Equation 实现法，以 mini3d 代表的实现方法其实相对比较复杂，但是很快，适合做 CPU 实时渲染。而本项目模拟 GPU 的实现方式相对简单直观，但是计算量很大，不适合 CPU 实时，却适合 GPU 粗暴的并行处理。
+
+网上有很多可编程渲染管线的实现教程，但是很多都做的有问题，诸如屏幕坐标他们取的是像素方格左上角的点，其实应该取像素方格中心的那个点，不然模型动起来三角形边缘会有跳变的感觉；比如临接三角形的边该怎么处理，基本我没见到几个处理正确的；再比如纹理采样时整数坐标换算应该要四舍五入的，不然纹理旋转起来几个顶点位置不够稳定，会有微动的迹象。。。。
+
+渲染器实现有很多非常细节的地方，如果注意不到，其实渲染结果是不准确的，本项目使用标准模型，不错绘一个点，算错一个坐标。
+
+再一个是易读性，某些项目为了易读性，砍了不少细节处理不说，很多运算都是一大堆矩阵套矩阵，两个出处都没有，这对于初学者来讲是十分费解的。
+
+## 阅读说明
+
+本项主文件 RenderHelp.h 一共一千多行，三分之一都是中文注释，复杂运算我全部展开了，并不一味为了节省代码尺寸牺牲可读性，某些计算其实可以提取到外层这样性能更快一些，但是为了可读性，我还是写到了和它相关的位置上，这样阅读理解更轻松。
+
+代码前面基本都是一些工具库，阅读可以从最后 200 行阅读即可，每个公式我都写了出处，基本半个小时拿笔推导下，你就能理解渲染器的原理是啥了。
+
+## Credit
+
+TODO
 
