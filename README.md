@@ -24,6 +24,8 @@
 gcc -O2 sample_07_specular.cpp -o sample_07_specular -lstdc++
 ```
 
+在 Mac 下好像要加个 `-std=c++17`，我应该没用啥 17 的东西，不过没环境不太确定。
+
 运行：
 
 ```bash
