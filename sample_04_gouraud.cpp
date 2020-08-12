@@ -69,6 +69,10 @@ int main(void)
 	Mat4x4f mat_proj = matrix_set_perspective(3.1415926f * 0.5f, 800 / 600.0, 1.0, 500.0f);
 	Mat4x4f mat_mvp = mat_model * mat_view * mat_proj;	// 综合变换矩阵
 
+	// model 矩阵求逆转置，用于将法向从模型坐标变换到世界坐标
+	// 法向不能直接乘以 model 矩阵，应为该矩阵包含位移，证明网上有
+	Mat4x4f mat_model_it = matrix_invert(mat_model).Transpose();
+
 	// 光照方向
 	Vec3f light_dir = {1, 0, 2};
 
@@ -78,11 +82,10 @@ int main(void)
 			Vec4f pos = vs_input[index].pos.xyz1() * mat_mvp;  
 			output.varying_vec2f[VARYING_TEXUV] = vs_input[index].uv;
 			output.varying_vec4f[VARYING_COLOR] = vs_input[index].color.xyz1();
-			// 法向需要经过 model 矩阵变换，但是不参与 view/projection 矩阵变换
-			// 相当于说，法向要在世界坐标系运算，而不是投影坐标系，或者摄像机坐标系
-			// 而 model 矩阵就是模型坐标系到世界坐标系的唯一变换，所以要参与一下
+			// 法向需要经过 model 矩阵的逆矩阵转置的矩阵变换，从模型坐标系转换
+			// 到世界坐标系，光照需要在世界坐标系内进行运算
 			Vec3f normal = vs_input[index].normal;
-			normal = (normal.xyz1() * mat_model).xyz();
+			normal = (normal.xyz1() * mat_model_it).xyz();
 			// 计算光照强度
 			float intense = vector_dot(normal, vector_normalize(light_dir));
 			// 避免越界同时加入一个常量环境光 0.1
