@@ -683,6 +683,11 @@ inline T Between(T xmin, T xmax, T x) {
 	return Min(Max(xmin, x), xmax); 
 }
 
+// 截取 [0, 1] 的范围
+template<typename T>
+inline T Saturate(T x) {
+	return Between<T>(0, 1, x);
+}
 
 // 类型别名
 typedef Vector<2, float>  Vec2f;
