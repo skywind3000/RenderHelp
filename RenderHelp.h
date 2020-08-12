@@ -659,12 +659,6 @@ inline Matrix<N, N, T> matrix_invert(const Matrix<N, N, T> &m) {
 	return ret / det;
 }
 
-// 求逆转置：这里没有直接使用伴随矩阵除以行列式，而是伴随矩阵
-template<size_t N, typename T>
-inline Matrix<N, N, T> matrix_invert_transpose(const Matrix<N, N, T> &m) {
-	return matrix_invert(m).Transpose();
-}
-
 // 输出到文本流
 template<size_t ROW, size_t COL, typename T>
 inline std::ostream& operator << (std::ostream& os, const Matrix<ROW, COL, T>& m) {
