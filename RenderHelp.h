@@ -1247,7 +1247,7 @@ public:
 
 public:
 
-	// 绘制一个三角形，必须先 SetVertex/SetAttrib 设定好三个点坐标和属性
+	// 绘制一个三角形，必须先设定好着色器函数
 	inline bool DrawPrimitive() {
 		if (_frame_buffer == NULL || _vertex_shader == NULL) 
 			return false;
