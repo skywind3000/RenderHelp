@@ -621,7 +621,7 @@ inline T matrix_det(const Matrix<2, 2, T> &m) {
 	return m[0][0] * m[1][1] - m[0][1] * m[1][0];
 }
 
-// 行列式求值：多阶行列式，即第一列同他们的余子式相乘求和
+// 行列式求值：多阶行列式，即第一行同他们的余子式相乘求和
 template<size_t N, typename T>
 inline T matrix_det(const Matrix<N, N, T> &m) {
 	T sum = 0;
