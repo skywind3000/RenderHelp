@@ -32,7 +32,7 @@ gcc -O2 sample_07_specular.cpp -o sample_07_specular -lstdc++
 
 然后得到一个图片文件 `output.bmp`：
 
-![](https://raw.githubusercontent.com/skywind3000/images/master/p/renderhelp/model_4.jpg)
+![](https://raw.githubusercontent.com/skywind3000/images/master/p/renderhelp/model_4_s.jpg)
 
 本项目的模型使用的是 [tinyrender](https://github.com/ssloy/tinyrenderer) 里面的开源模型。
 
