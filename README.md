@@ -95,7 +95,7 @@ bool RenderHelp::DrawPrimitive()
 
 ## 完整例子
 
-现在你想写个 D3D 11 的三角形绘制，没有一千行你搞不定，但是现在我们只需要下面几行：
+现在你想写个 D3D 12 的三角形绘制，没有一千行你搞不定，但是现在我们只需要下面几行：
 
 ```cpp
 #include "RenderHelp.h"
