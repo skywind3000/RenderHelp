@@ -805,23 +805,10 @@ inline static Mat4x4f matrix_set_lookat(const Vec3f& eye, const Vec3f& at, const
 	Vec3f yaxis = vector_cross(zaxis, xaxis);
 	Mat4x4f m;
 
-	m.m[0][0] = xaxis.x;
-	m.m[1][0] = xaxis.y;
-	m.m[2][0] = xaxis.z;
-	m.m[3][0] = -vector_dot(eye, xaxis);
-
-	m.m[0][1] = yaxis.x;
-	m.m[1][1] = yaxis.y;
-	m.m[2][1] = yaxis.z;
-	m.m[3][1] = -vector_dot(eye, yaxis);
-
-	m.m[0][2] = zaxis.x;
-	m.m[1][2] = zaxis.y;
-	m.m[2][2] = zaxis.z;
-	m.m[3][2] = -vector_dot(eye, zaxis);
-	
-	m.m[0][3] = m.m[1][3] = m.m[2][3] = 0.0f;
-	m.m[3][3] = 1.0f;
+	m.SetCol(0, Vec4f(xaxis.x, xaxis.y, xaxis.z, -vector_dot(eye, xaxis)));
+	m.SetCol(1, Vec4f(yaxis.x, yaxis.y, yaxis.z, -vector_dot(eye, yaxis)));
+	m.SetCol(2, Vec4f(zaxis.x, zaxis.y, zaxis.z, -vector_dot(eye, zaxis)));
+	m.SetCol(3, Vec4f(0.0f, 0.0f, 0.0f, 1.0f));
 
 	return m;
 }
