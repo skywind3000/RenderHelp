@@ -176,5 +176,5 @@ int main(void)
 
 ## Credit
 
-TODO
+欢迎 PR 各类高级渲染效果。
 
