@@ -773,7 +773,7 @@ inline static Mat4x4f matrix_set_scale(float x, float y, float z) {
 	return m;
 }
 
-// 旋转编号，围绕 (x, y, z) 矢量选中 theta 角度
+// 旋转编号，围绕 (x, y, z) 矢量旋转 theta 角度
 inline static Mat4x4f matrix_set_rotate(float x, float y, float z, float theta) {
 	float qsin = (float)sin(theta * 0.5f);
 	float qcos = (float)cos(theta * 0.5f);
@@ -804,12 +804,10 @@ inline static Mat4x4f matrix_set_lookat(const Vec3f& eye, const Vec3f& at, const
 	Vec3f xaxis = vector_normalize(vector_cross(up, zaxis));
 	Vec3f yaxis = vector_cross(zaxis, xaxis);
 	Mat4x4f m;
-
 	m.SetCol(0, Vec4f(xaxis.x, xaxis.y, xaxis.z, -vector_dot(eye, xaxis)));
 	m.SetCol(1, Vec4f(yaxis.x, yaxis.y, yaxis.z, -vector_dot(eye, yaxis)));
 	m.SetCol(2, Vec4f(zaxis.x, zaxis.y, zaxis.z, -vector_dot(eye, zaxis)));
 	m.SetCol(3, Vec4f(0.0f, 0.0f, 0.0f, 1.0f));
-
 	return m;
 }
 
@@ -1031,12 +1029,7 @@ public:
 	// 纹理采样
 	inline Vec4f Sample2D(float u, float v) const {
 		uint32_t rgba = SampleBilinear(u * _w + 0.5f, v * _h + 0.5f);
-		Vec4f out;
-		out.r = ((rgba >> 16) & 0xff) / 255.0f;
-		out.g = ((rgba >>  8) & 0xff) / 255.0f;
-		out.b = ((rgba >>  0) & 0xff) / 255.0f;
-		out.a = ((rgba >> 24) & 0xff) / 255.0f;
-		return out;
+		return vector_from_color(rgba);
 	}
 
 	// 纹理采样：直接传入 Vec2f
@@ -1074,15 +1067,14 @@ public:
 
 protected:
 
-	// 双线性采样计算：给出四个点的像素，以及坐标偏移，计算结果
+	// 双线性插值计算：给出四个点的颜色，以及坐标偏移，计算结果
 	inline static uint32_t BilinearInterp(uint32_t tl, uint32_t tr, 
 		uint32_t bl, uint32_t br, int32_t distx, int32_t disty) {
-		int32_t distxy, distxiy, distixy, distixiy;
 		uint32_t f, r;
-		distxy = distx * disty;
-		distxiy = (distx << 8) - distxy;	/* distx * (256 - disty) */
-		distixy = (disty << 8) - distxy;	/* disty * (256 - distx) */
-		distixiy = 256 * 256 - (disty << 8) - (distx << 8) + distxy;
+		int32_t distxy = distx * disty;
+		int32_t distxiy = (distx << 8) - distxy;  /* distx * (256 - disty) */
+		int32_t distixy = (disty << 8) - distxy;  /* disty * (256 - distx) */
+		int32_t distixiy = 256 * 256 - (disty << 8) - (distx << 8) + distxy;
 		r = (tl & 0x000000ff) * distixiy + (tr & 0x000000ff) * distxiy
 		  + (bl & 0x000000ff) * distixy  + (br & 0x000000ff) * distxy;
 		f = (tl & 0x0000ff00) * distixiy + (tr & 0x0000ff00) * distxiy
@@ -1120,7 +1112,7 @@ struct ShaderContext {
 
 
 // 顶点着色器：因为是 C++ 编写，无需传递 attribute，传个 0-2 的顶点序号
-// 着色器函数直接在外层根据序号读取响应数据即可，最后需要返回一个坐标 pos
+// 着色器函数直接在外层根据序号读取相应数据即可，最后需要返回一个坐标 pos
 // 各项 varying 设置到 output 里，由渲染器插值后传递给 PS 
 typedef std::function<Vec4f(int index, ShaderContext &output)> VertexShader;
 
@@ -1326,7 +1318,7 @@ public:
 		if (s <= 0) return false;
 
 		// 三角形填充时，左面和上面的边上的点需要包括，右方和下方边上的点不包括
-		// 先判断是否是 TopLeft，判断出来后会和下方 Edge Equation 一起进行判断
+		// 先判断是否是 TopLeft，判断出来后会和下方 Edge Equation 一起决策
 		bool TopLeft01 = IsTopLeft(p0, p1);
 		bool TopLeft12 = IsTopLeft(p1, p2);
 		bool TopLeft20 = IsTopLeft(p2, p0);
@@ -1370,7 +1362,7 @@ public:
 
 				// 进行深度测试
 				if (rhw < _depth_buffer[cy][cx]) continue;
-				_depth_buffer[cy][cx] = rhw;
+				_depth_buffer[cy][cx] = rhw;   // 记录 1/w 到深度缓存
 
 				// 还原当前像素的 w
 				float w = 1.0f / ((rhw != 0.0f)? rhw : 1.0f);
@@ -1428,7 +1420,9 @@ public:
 					color = _pixel_shader(input);
 				}
 
-				// 绘制到 framebuffer 上
+				// 绘制到 framebuffer 上，这里可以加判断，如果 PS 返回的颜色 alpha 分量
+				// 小于等于零则放弃绘制，不过这样的话要把前面的更新深度缓存的代码挪下来，
+				// 只有需要渲染的时候才更新深度。
 				_frame_buffer->SetPixel(cx, cy, color);
 			}
 		}
