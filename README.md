@@ -107,7 +107,7 @@ int main(void)
 
     const int VARYING_COLOR = 0;    // 定义一个 varying 的 key
 
-    // 顶点数据，由 VS 读取
+    // 顶点数据，由 VS 读取，如有多个三角形，可每次更新 vs_input 再绘制
     struct { Vec4f pos; Vec4f color; } vs_input[3] = {
         { {  0.0,  0.7, 0.90, 1}, {1, 0, 0, 1} },
         { { -0.6, -0.2, 0.01, 1}, {0, 1, 0, 1} },
