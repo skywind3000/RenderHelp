@@ -20,7 +20,7 @@
 
 ## 编译运行
 
-编译：
+随便找个 `sample_` 开头的例子文件直接 gcc 单文件编译即可：
 
 ```bash
 gcc -O2 sample_07_specular.cpp -o sample_07_specular -lstdc++
