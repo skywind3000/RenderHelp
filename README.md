@@ -2,6 +2,8 @@
 
 可编程渲染管线实现，全中文注释，帮助初学者学习渲染原理。
 
+[![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://github.com/Naereen/StrapDown.js/blob/master/LICENSE) [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity) [![Join the chat at https://gitter.im/skywind3000/asynctasks.vim](https://badges.gitter.im/skywind3000/asynctasks.vim.svg)](https://gitter.im/skywind3000/RenderHelp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ## 特性介绍
 
 - 单个 RenderHelp.h 文件，从画点开始实现可编程渲染管线，无外部依赖。
@@ -93,7 +95,7 @@ bool RenderHelp::DrawPrimitive()
 
 ## 完整例子
 
-现在你想写个 D3D 11 的三角形绘制，没有一千行你搞不定，但是这里我们只需要下面几行：
+现在你想写个 D3D 11 的三角形绘制，没有一千行你搞不定，但是现在我们只需要下面几行：
 
 ```cpp
 #include "RenderHelp.h"
@@ -150,13 +152,13 @@ int main(void)
 | [sample_06_normal.cpp](sample_06_normal.cpp) | 使用法向贴图增强模型细节 |
 | [sample_07_specular.cpp](sample_07_specular.cpp) | 绘制高光 |
 
-## 项目对比
+## 实现对比
 
-十多年前我写了个软渲染器教程 [mini3d](https://github.com/skywind3000/mini3d)，比较清晰的说明了软件渲染器的核心原理，这是标准软渲染器的实现方法，叫做 Edge Walking。
+十多年前我写了个软渲染器教程 [mini3d](https://github.com/skywind3000/mini3d)，比较清晰的说明了软件渲染器的核心原理，这是标准软渲染器的实现方法，主要是基于 Edge Walking 和扫描线算法。
 
 而本项目的实现方式是仿照 GPU 的 Edge Equation 实现法，以 mini3d 代表的实现方法其实相对比较复杂，但是很快，适合做 CPU 实时渲染。而本项目模拟 GPU 的实现方式相对简单直观，但是计算量很大，不适合 CPU 实时，却适合 GPU 粗暴的并行处理。
 
-网上有很多可编程渲染管线的实现教程，但是很多都做的有问题，诸如屏幕坐标他们取的是像素方格左上角的点，其实应该取像素方格中心的那个点，不然模型动起来三角形边缘会有跳变的感觉；比如临接三角形的边该怎么处理，基本我没见到几个处理正确的；再比如纹理采样时整数坐标换算应该要四舍五入的，不然纹理旋转起来几个顶点位置不够稳定，会有微动的迹象。。。。
+网上有很多可编程渲染管线的实现教程，但是很多都做的有问题，诸如屏幕坐标他们取的是像素方格左上角的点，其实应该取像素方格中心的那个点，不然模型动起来三角形边缘会有跳变的感觉；比如临接三角形的边该怎么处理，基本我没见到几个处理正确的；再比如纹理采样时整数坐标换算应该要四舍五入的，不然纹理旋转起来几个顶点位置不够稳定，会有微动的迹象；还有一些软件渲染器连纹理都不是透视正确的，还在用着仿式纹理映射。。。。
 
 渲染器实现有很多非常细节的地方，如果注意不到，其实渲染结果是不准确的，本项目使用标准模型，不错绘一个点，不算错一个坐标。
 
