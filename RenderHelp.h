@@ -25,9 +25,9 @@
 #include <math.h>
 #include <assert.h>
 
-#include <initializer_list>
 #include <vector>
 #include <map>
+#include <initializer_list>
 #include <stdexcept>
 #include <functional>
 #include <ostream>
@@ -42,7 +42,7 @@
 template <size_t N, typename T> struct Vector {
 	T m[N];    // 元素数组
 	inline Vector() { for (size_t i = 0; i < N; i++) m[i] = T(); }
-	inline Vector(const T *ptr) { for (int i = 0; i < N; i++) m[i] = ptr[i]; }
+	inline Vector(const T *ptr) { for (size_t i = 0; i < N; i++) m[i] = ptr[i]; }
 	inline Vector(const Vector<N, T> &u) { for (size_t i = 0; i < N; i++) m[i] = u.m[i]; }
 	inline Vector(const std::initializer_list<T> &u) { 
 		auto it = u.begin(); for (size_t i = 0; i < N; i++) m[i] = *it++; }
@@ -66,8 +66,8 @@ template <typename T> struct Vector<2, T> {
 	inline Vector(const T *ptr): x(ptr[0]), y(ptr[1]) {}
 	inline const T& operator[] (size_t i) const { assert(i < 2); return m[i]; }
 	inline T& operator[] (size_t i) { assert(i < 2); return m[i]; }
-	inline void load(const T *ptr) { for (int i = 0; i < 2; i++) m[i] = ptr[i]; }
-	inline void save(T *ptr) { for (int i = 0; i < 2; i++) ptr[i] = m[i]; }
+	inline void load(const T *ptr) { for (size_t i = 0; i < 2; i++) m[i] = ptr[i]; }
+	inline void save(T *ptr) { for (size_t i = 0; i < 2; i++) ptr[i] = m[i]; }
 	inline Vector<2, T> xy() const { return *this; }
 	inline Vector<3, T> xy1() const { return Vector<3, T>(x, y, 1); }
 	inline Vector<4, T> xy11() const { return Vector<4, T>(x, y, 1, 1); }
@@ -87,8 +87,8 @@ template <typename T> struct Vector<3, T> {
 	inline Vector(const T *ptr): x(ptr[0]), y(ptr[1]), z(ptr[2]) {}
 	inline const T& operator[] (size_t i) const { assert(i < 3); return m[i]; }
 	inline T& operator[] (size_t i) { assert(i < 3); return m[i]; }
-	inline void load(const T *ptr) { for (int i = 0; i < 3; i++) m[i] = ptr[i]; }
-	inline void save(T *ptr) { for (int i = 0; i < 3; i++) ptr[i] = m[i]; }
+	inline void load(const T *ptr) { for (size_t i = 0; i < 3; i++) m[i] = ptr[i]; }
+	inline void save(T *ptr) { for (size_t i = 0; i < 3; i++) ptr[i] = m[i]; }
 	inline Vector<2, T> xy() const { return Vector<2, T>(x, y); }
 	inline Vector<3, T> xyz() const { return *this; }
 	inline Vector<4, T> xyz1() const { return Vector<4, T>(x, y, z, 1); }
@@ -108,8 +108,8 @@ template <typename T> struct Vector<4, T> {
 	inline Vector(const T *ptr): x(ptr[0]), y(ptr[1]), z(ptr[2]), w(ptr[3]) {}
 	inline const T& operator[] (size_t i) const { assert(i < 4); return m[i]; }
 	inline T& operator[] (size_t i) { assert(i < 4); return m[i]; }
-	inline void load(const T *ptr) { for (int i = 0; i < 4; i++) m[i] = ptr[i]; }
-	inline void save(T *ptr) { for (int i = 0; i < 4; i++) ptr[i] = m[i]; }
+	inline void load(const T *ptr) { for (size_t i = 0; i < 4; i++) m[i] = ptr[i]; }
+	inline void save(T *ptr) { for (size_t i = 0; i < 4; i++) ptr[i] = m[i]; }
 	inline Vector<2, T> xy() const { return Vector<2, T>(x, y); }
 	inline Vector<3, T> xyz() const { return Vector<3, T>(x, y, z); }
 	inline Vector<4, T> xyzw() const { return *this; }
@@ -281,6 +281,12 @@ inline T vector_length(const Vector<N, T>& a) {
 	return sqrt(vector_length_square(a));
 }
 
+// = |a| , 特化 float 类型，使用 sqrtf
+template<size_t N>
+inline float vector_length(const Vector<N, float>& a) {
+	return sqrtf(vector_length_square(a));
+}
+
 // = a / |a|
 template<size_t N, typename T>
 inline Vector<N, T> vector_normalize(const Vector<N, T>& a) {
@@ -374,7 +380,7 @@ inline Vector<N, T> vector_clamp(const Vector<N, T>& a, T minx = 0, T maxx = 1) 
 template<size_t N, typename T>
 inline std::ostream& operator << (std::ostream& os, const Vector<N, T>& a) {
 	os << "[";
-	for (unsigned int i = 0; i < N; i++) {
+	for (size_t i = 0; i < N; i++) {
 		os << a[i];
 		if (i < N - 1) os << ", ";
 	}
