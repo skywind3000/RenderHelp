@@ -32,6 +32,7 @@
 #include <functional>
 #include <ostream>
 #include <sstream>
+#include <iostream>
 
 
 //---------------------------------------------------------------------
@@ -682,16 +683,17 @@ inline std::ostream& operator << (std::ostream& os, const Matrix<ROW, COL, T>& m
 template<typename T> inline T Abs(T x) { return (x < 0)? (-x) : x; }
 template<typename T> inline T Max(T x, T y) { return (x < y)? y : x; }
 template<typename T> inline T Min(T x, T y) { return (x > y)? y : x; }
-template<typename T> inline bool NearEqual(T x, T y, T error) { return (Abs(x - y) < error); }
 
-template<typename T> 
-inline T Between(T xmin, T xmax, T x) { 
+template<typename T> inline bool NearEqual(T x, T y, T error) { 
+	return (Abs(x - y) < error); 
+}
+
+template<typename T> inline T Between(T xmin, T xmax, T x) { 
 	return Min(Max(xmin, x), xmax); 
 }
 
 // 截取 [0, 1] 的范围
-template<typename T>
-inline T Saturate(T x) {
+template<typename T> inline T Saturate(T x) {
 	return Between<T>(0, 1, x);
 }
 
@@ -1226,7 +1228,7 @@ public:
 	}
 
 	// 判断一条边是不是三角形的左上边 (Top-Left Edge)
-	inline bool IsTopLeft(const Vec2f& a, const Vec2f& b) {
+	inline bool IsTopLeft(const Vec2i& a, const Vec2i& b) {
 		return ((a.y == b.y) && (a.x < b.x)) || (a.y > b.y);
 	}
 
@@ -1306,7 +1308,7 @@ public:
 		Vertex *vtx[3] = { &_vertex[0], &_vertex[1], &_vertex[2] };
 
 		// 如果背向视点，则交换顶点，保证 edge equation 判断的符号为正
-		if (normal.z < 0.0f) {
+		if (normal.z > 0.0f) {
 			vtx[1] = &_vertex[2];
 			vtx[2] = &_vertex[1];
 		}
@@ -1315,9 +1317,9 @@ public:
 		}
 
 		// 保存三个端点位置
-		Vec2f p0 = vtx[0]->spf;
-		Vec2f p1 = vtx[1]->spf;
-		Vec2f p2 = vtx[2]->spf;
+		Vec2i p0 = vtx[0]->spi;
+		Vec2i p1 = vtx[1]->spi;
+		Vec2i p2 = vtx[2]->spi;
 
 		// 计算面积，为零就退出
 		float s = Abs(vector_cross(p1 - p0, p2 - p0));
@@ -1335,15 +1337,17 @@ public:
 				Vec2f px = { (float)cx, (float)cy };
 
 				// Edge Equation
-				float E01 = (px.x - p0.x) * (p1.y - p0.y) - (px.y - p0.y) * (p1.x - p0.x);
-				float E12 = (px.x - p1.x) * (p2.y - p1.y) - (px.y - p1.y) * (p2.x - p1.x);
-				float E20 = (px.x - p2.x) * (p0.y - p2.y) - (px.y - p2.y) * (p0.x - p2.x);
+				// 使用整数避免浮点误差，同时因为是左手系，所以符号取反
+				int E01 = -(cx - p0.x) * (p1.y - p0.y) + (cy - p0.y) * (p1.x - p0.x);
+				int E12 = -(cx - p1.x) * (p2.y - p1.y) + (cy - p1.y) * (p2.x - p1.x);
+				int E20 = -(cx - p2.x) * (p0.y - p2.y) + (cy - p2.y) * (p0.x - p2.x);
+
 
 				// 如果是左上边，用 E >= 0 判断合法，如果右下边就用 E > 0 判断合法
-				// 这里通过引入一个误差 0.0001 ，来将 < 0 和 <= 0 用一个式子表达
-				if (E01 < (TopLeft01? 0 : 0.0001)) continue;	// 在第一条边后面
-				if (E12 < (TopLeft12? 0 : 0.0001)) continue;	// 在第二条边后面
-				if (E20 < (TopLeft20? 0 : 0.0001)) continue;	// 在第三条边后面
+				// 这里通过引入一个误差 1 ，来将 < 0 和 <= 0 用一个式子表达
+				if (E01 < (TopLeft01? 0 : 1)) continue;   // 在第一条边后面
+				if (E12 < (TopLeft12? 0 : 1)) continue;   // 在第二条边后面
+				if (E20 < (TopLeft20? 0 : 1)) continue;   // 在第三条边后面
 
 				// 三个端点到当前点的矢量
 				Vec2f s0 = vtx[0]->spf - px;
