@@ -53,7 +53,8 @@ int main(void)
 			// 计算反射光线
 			Vec3f r = vector_normalize(n * vector_dot(n, l) * 2.0f - l);
 			// 计算高光
-			float spec = Saturate(pow(vector_dot(r, eye_dir), s * 20) * 0.05);
+			float p = Saturate(vector_dot(r, eye_dir));
+			float spec = Saturate(pow(p, s * 20) * 0.05);
 			// 综合光照强度
 			float intense = Saturate(vector_dot(n, l)) + 0.2f + spec;
 			Vec4f color = model.diffuse(uv);
