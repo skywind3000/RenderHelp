@@ -1335,7 +1335,7 @@ public:
 		// 迭代三角形外接矩形的所有点
 		for (int cy = _min_y; cy <= _max_y; cy++) {
 			for (int cx = _min_x; cx <= _max_x; cx++) {
-				Vec2f px = { (float)cx, (float)cy };
+				Vec2f px = { (float)cx + 0.5f, (float)cy + 0.5f };
 
 				// Edge Equation
 				// 使用整数避免浮点误差，同时因为是左手系，所以符号取反
