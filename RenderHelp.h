@@ -782,7 +782,7 @@ inline static Mat4x4f matrix_set_scale(float x, float y, float z) {
 	return m;
 }
 
-// 旋转编号，围绕 (x, y, z) 矢量旋转 theta 角度
+// 旋转变换，围绕 (x, y, z) 矢量旋转 theta 角度
 inline static Mat4x4f matrix_set_rotate(float x, float y, float z, float theta) {
 	float qsin = (float)sin(theta * 0.5f);
 	float qcos = (float)cos(theta * 0.5f);
