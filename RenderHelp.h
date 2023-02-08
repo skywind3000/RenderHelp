@@ -663,7 +663,7 @@ inline Matrix<N, N, T> matrix_adjoint(const Matrix<N, N, T> &m) {
 template<size_t N, typename T>
 inline Matrix<N, N, T> matrix_invert(const Matrix<N, N, T> &m) {
 	Matrix<N, N, T> ret = matrix_adjoint(m);
-	T det = vector_dot(m.Row(0), ret.Col(0));
+	T det = matrix_det(m);
 	return ret / det;
 }
 
