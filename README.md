@@ -21,6 +21,17 @@
 
 ## 编译运行
 
+### CMake
+```bash
+mkdir build
+cmake -S . -B ./build
+cmake --build ./build --config Release
+```
+
+注意复制res文件夹到可执行文件所在路径。
+
+### GCC
+
 随便找个 `sample_` 开头的例子文件直接 gcc 单文件编译即可：
 
 ```bash
