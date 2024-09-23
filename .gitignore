@@ -30,3 +30,9 @@
 
 # Debug files
 *.dSYM/
+
+/.vscode/*
+*.bmp
+*.png
+*.jpg
+*.jpeg

@@ -182,7 +182,7 @@ int main(void)
 
 基本原理，我在下面回答里解释过：
 
-- [OpenGL 和 DirectX 是如何在只知道顶点的情况下得出像素位置的？](https://www.zhihu.com/question/48299522/answer/799333394)
+- [OpenGL 和 DirectX 是如何在只知道顶点的情况下得出像素位置的？](https://skywind.me/blog/archives/2594)
 
 阅读时，代码前面基本都是一些工具库，可以从最后 200 行阅读即可，每个公式我都写了出处，基本半个小时拿笔推导下，你不但能理解渲染器的原理是啥，还多了一个方便随时调试 shader 验证想法的工具。
 
